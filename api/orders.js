@@ -164,6 +164,9 @@ function placeOrder(request, response, next) {
       return next(err);
     }
 
+    console.log('options', options);
+    console.log('placedOrder', placedOrder);
+
     respond.success(response, placedOrder);
   });
   
@@ -219,14 +222,13 @@ function placeOrder(request, response, next) {
 function cancelOrder(request, response, next) {
   var params = request.params;
 
-  Object.keys(request.body).forEach(function(param) {
-    params[param] = request.body[param];
-  });
-
   var options = {
-    secret: params.secret,
     validated: request.query.validated === 'true'
   };
+
+  Object.keys(request.body).forEach(function(param) {
+    options[param] = request.body[param];
+  });
 
   var hooks = {
     validateParams: validateParams,

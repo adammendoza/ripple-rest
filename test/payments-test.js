@@ -424,56 +424,6 @@ suite('post payments', function() {
     .end(done);
   });
 
-  test('/payments -- with validated false and ledger sequence too high error', function(done) {
-    self.wss.once('request_account_info', function(message, conn) {
-      assert.strictEqual(message.command, 'account_info');
-      assert.strictEqual(message.account, addresses.VALID);
-      conn.send(fixtures.accountInfoResponse(message));
-    });
-
-    self.wss.once('request_submit', function(message, conn) {
-      assert.strictEqual(message.command, 'submit');
-      conn.send(fixtures.ledgerSequenceTooHighResponse(message));
-      testutils.closeLedgers(conn);
-    });
-
-    self.app
-    .post('/v1/accounts/' + addresses.VALID + '/payments?validated=false')
-    .send(fixtures.payment({
-      value: '0.001',
-      currency: 'USD'
-    }))
-    .expect(testutils.checkBody(errors.RESTResponseLedgerSequenceTooHigh))
-    .expect(testutils.checkStatus(500))
-    .expect(testutils.checkHeaders)
-    .end(done);
-  });
-
-  test('/payments -- with validated false and destination tag needed error', function(done) {
-    self.wss.once('request_account_info', function(message, conn) {
-      assert.strictEqual(message.command, 'account_info');
-      assert.strictEqual(message.account, addresses.VALID);
-      conn.send(fixtures.accountInfoResponse(message));
-    });
-
-    self.wss.once('request_submit', function(message, conn) {
-      assert.strictEqual(message.command, 'submit');
-      conn.send(fixtures.destinationTagNeededResponse(message));
-      testutils.closeLedgers(conn);
-    });
-
-    self.app
-    .post('/v1/accounts/' + addresses.VALID + '/payments?validated=false')
-    .send(fixtures.payment({
-      value: '0.001',
-      currency: 'USD'
-    }))
-    .expect(testutils.checkBody(errors.RESTResponseLedgerSequenceTooHigh))
-    .expect(testutils.checkStatus(500))
-    .expect(testutils.checkHeaders)
-    .end(done);
-  });
-
   test('/payments -- with validated false and max fee exceeded error', function(done) {
     self.wss.once('request_account_info', function(message, conn) {
       assert.strictEqual(message.command, 'account_info');
@@ -496,56 +446,6 @@ suite('post payments', function() {
     .expect(testutils.checkStatus(500))
     .expect(testutils.checkHeaders)
     .expect(testutils.checkBody(errors.RESTMaxFeeExceeded))
-    .end(done);
-  });
-
-  test('/payments -- ledger sequence too high error', function(done) {
-    self.wss.once('request_account_info', function(message, conn) {
-      assert.strictEqual(message.command, 'account_info');
-      assert.strictEqual(message.account, addresses.VALID);
-      conn.send(fixtures.accountInfoResponse(message));
-    });
-
-    self.wss.once('request_submit', function(message, conn) {
-      assert.strictEqual(message.command, 'submit');
-      conn.send(fixtures.ledgerSequenceTooHighResponse(message));
-      testutils.closeLedgers(conn);
-    });
-
-    self.app
-    .post('/v1/accounts/' + addresses.VALID + '/payments')
-    .send(fixtures.payment({
-      value: '0.001',
-      currency: 'USD'
-    }))
-    .expect(testutils.checkBody(errors.RESTResponseLedgerSequenceTooHigh))
-    .expect(testutils.checkStatus(500))
-    .expect(testutils.checkHeaders)
-    .end(done);
-  });
-
-  test('/payments -- destination tag needed error', function(done) {
-    self.wss.once('request_account_info', function(message, conn) {
-      assert.strictEqual(message.command, 'account_info');
-      assert.strictEqual(message.account, addresses.VALID);
-      conn.send(fixtures.accountInfoResponse(message));
-    });
-
-    self.wss.once('request_submit', function(message, conn) {
-      assert.strictEqual(message.command, 'submit');
-      conn.send(fixtures.destinationTagNeededResponse(message));
-      testutils.closeLedgers(conn);
-    });
-
-    self.app
-    .post('/v1/accounts/' + addresses.VALID + '/payments')
-    .send(fixtures.payment({
-      value: '0.001',
-      currency: 'USD'
-    }))
-    .expect(testutils.checkBody(errors.RESTResponseLedgerSequenceTooHigh))
-    .expect(testutils.checkStatus(500))
-    .expect(testutils.checkHeaders)
     .end(done);
   });
 
@@ -751,33 +651,6 @@ suite('post payments', function() {
     .end(done);
   });
 
-  test('/payments -- with ledger sequence below current', function(done) {
-    self.wss.once('request_account_info', function(message, conn) {
-      assert.strictEqual(message.command, 'account_info');
-      assert.strictEqual(message.account, addresses.VALID);
-      conn.send(fixtures.accountInfoResponse(message));
-    });
-
-    self.wss.once('request_submit', function(message, conn) {
-      assert.strictEqual(message.command, 'submit');
-      conn.send(fixtures.ledgerSequenceTooHighResponse(message, 1));
-      testutils.closeLedgers(conn);
-    });
-
-    self.app
-    .post('/v1/accounts/' + addresses.VALID + '/payments')
-    .send(fixtures.payment({
-      value: '0.001',
-      currency: 'USD',
-      issuer: addresses.issuer,
-      lastLedgerSequence: 1
-    }))
-    .expect(testutils.checkBody(errors.RESTResponseLedgerSequenceTooHigh))
-    .expect(testutils.checkStatus(500))
-    .expect(testutils.checkHeaders)
-    .end(done);
-  });
-
   test('/payments -- with ledger sequence above current', function(done) {
     self.wss.once('request_account_info', function(message, conn) {
       assert.strictEqual(message.command, 'account_info');
@@ -806,7 +679,7 @@ suite('post payments', function() {
     .end(done);
   });
 
-  test('/payments -- with max fee set above computed fee but below expected server fee and remote\'s local_fee flag turned off', function(done) {
+  test('/payments -- with validated true, max fee set above computed fee but below expected server fee and remote\'s local_fee flag turned off', function(done) {
     self.app.remote.local_fee = false;
 
     self.wss.once('request_account_info', function(message, conn) {
@@ -829,7 +702,7 @@ suite('post payments', function() {
     });
 
     self.app
-    .post('/v1/accounts/' + addresses.VALID + '/payments')
+    .post('/v1/accounts/' + addresses.VALID + '/payments?validated=true')
     .send(fixtures.payment({
       value: '0.001',
       currency: 'USD',
@@ -895,7 +768,7 @@ suite('post payments', function() {
     .end(done);
   });
 
-  test('/payments -- with not enough XRP to create a new account', function(done) {
+  test('/payments -- with validated true and not enough XRP to create a new account', function(done) {
     var hash = testutils.generateHash();
 
     self.wss.once('request_subscribe', function(message, conn) {
@@ -932,7 +805,7 @@ suite('post payments', function() {
     });
 
     self.app
-      .post('/v1/accounts/' + addresses.VALID + '/payments')
+      .post('/v1/accounts/' + addresses.VALID + '/payments?validated=true')
       .send(fixtures.payment())
       .expect(testutils.checkStatus(500))
       .expect(testutils.checkHeaders)
@@ -944,7 +817,7 @@ suite('post payments', function() {
       .end(done);
   });
 
-  test('/payments -- with not enough balance to pay the fee', function(done) {
+  test('/payments -- with validated true and not enough balance to pay the fee', function(done) {
     var hash = testutils.generateHash();
 
     self.wss.once('request_subscribe', function(message, conn) {
@@ -971,7 +844,7 @@ suite('post payments', function() {
     });
 
     self.app
-      .post('/v1/accounts/' + addresses.VALID + '/payments')
+      .post('/v1/accounts/' + addresses.VALID + '/payments?validated=true')
       .send(fixtures.payment())
       .expect(testutils.checkStatus(500))
       .expect(testutils.checkHeaders)
@@ -983,7 +856,7 @@ suite('post payments', function() {
       .end(done);
   });
 
-  test('/payments -- with an unfunded account', function(done) {
+  test('/payments -- with validated true and an unfunded account', function(done) {
     var hash = testutils.generateHash();
 
     self.wss.once('request_subscribe', function(message, conn) {
@@ -1009,7 +882,7 @@ suite('post payments', function() {
     });
 
     self.app
-      .post('/v1/accounts/' + addresses.VALID + '/payments')
+      .post('/v1/accounts/' + addresses.VALID + '/payments?validated=true')
       .send(fixtures.payment())
       .expect(testutils.checkStatus(500))
       .expect(testutils.checkHeaders)

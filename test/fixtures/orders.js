@@ -19,7 +19,8 @@ const DEFAULTS = {
   hash: ORDER_HASH,
   type: 'sell',
   state: 'pending',
-  sequence: 99
+  sequence: 99,
+  fee: '0.012'
 };
 
 module.exports.order = function(options) {
@@ -39,6 +40,20 @@ module.exports.order = function(options) {
     }
   });
 
+  console.log('options fix', options);
+
+
+  console.log('returns', {
+    secret: options.secret,
+    order: {
+      type: options.type,
+      passive: options.passive,
+      immediate_or_cancel: options.immediate_or_cancel,
+      fill_or_kill: options.fill_or_kill,
+      taker_gets: options.taker_gets,
+      taker_pays: options.taker_pays
+    }});
+
   return {
     secret: options.secret,
     order: {
@@ -50,6 +65,7 @@ module.exports.order = function(options) {
        taker_pays: options.taker_pays
     }
   };
+
 };
 
 module.exports.accountOrdersResponse = function(request, options) {
@@ -1007,9 +1023,9 @@ module.exports.RESTCancelTransactionResponse = function(options) {
       ledger: String(options.last_ledger),
       state: options.state,
       account: options.account,
-      fee: '0.012',
-      offer_sequence: options.sequence,
-      sequence: options.sequence + 1
+      fee: options.fee,
+      offer_sequence: options.hasOwnProperty('offer_sequence') ? options.offer_sequence : options.sequence,
+      sequence: options.hasOwnProperty('offer_sequence') ? options.sequence : options.sequence + 1
     }
   });
 };

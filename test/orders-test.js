@@ -545,28 +545,6 @@ suite('post orders', function() {
     .end(done);
   });
 
-  test('/orders -- with validated false and ledger sequence too high error', function(done) {
-    self.wss.once('request_account_info', function(message, conn) {
-      assert.strictEqual(message.command, 'account_info');
-      assert.strictEqual(message.account, addresses.VALID);
-      conn.send(fixtures.accountInfoResponse(message));
-    });
-
-    self.wss.once('request_submit', function(message, conn) {
-      assert.strictEqual(message.command, 'submit');
-      conn.send(fixtures.ledgerSequenceTooHighResponse(message));
-      testutils.closeLedgers(conn);
-    });
-
-    self.app
-    .post('/v1/accounts/' + addresses.VALID + '/orders?validated=false')
-    .send(fixtures.order())
-    .expect(testutils.checkBody(errors.RESTResponseLedgerSequenceTooHigh))
-    .expect(testutils.checkStatus(500))
-    .expect(testutils.checkHeaders)
-    .end(done);
-  });
-
   test('/orders -- with validated false and invalid secret', function(done) {
     self.wss.once('request_account_info', function(message, conn) {
       assert.strictEqual(message.command, 'account_info');
@@ -1030,7 +1008,7 @@ suite('post orders', function() {
     .end(done);
   });
 
-  test('/orders -- with unfunded offer error', function(done) {
+  test('/orders -- with validated true and unfunded offer error', function(done) {
     var hash = testutils.generateHash();
 
     self.wss.once('request_account_info', function(message, conn) {
@@ -1056,7 +1034,7 @@ suite('post orders', function() {
     });
 
     self.app
-    .post('/v1/accounts/' + addresses.VALID + '/orders')
+    .post('/v1/accounts/' + addresses.VALID + '/orders?validated=true')
     .send(fixtures.order())
     .expect(testutils.checkStatus(500))
     .expect(testutils.checkHeaders)
@@ -1068,7 +1046,7 @@ suite('post orders', function() {
     .end(done);
   });
 
-  test('/orders -- with ledger sequence too high response', function(done) {
+  test.only('/orders -- with ledger sequence too high response', function(done) {
     self.wss.once('request_account_info', function(message, conn) {
       assert.strictEqual(message.command, 'account_info');
       assert.strictEqual(message.account, addresses.VALID);
@@ -1085,7 +1063,7 @@ suite('post orders', function() {
     .post('/v1/accounts/' + addresses.VALID + '/orders')
     .send(fixtures.order())
     .expect(testutils.checkBody(errors.RESTResponseLedgerSequenceTooHigh))
-    .expect(testutils.checkStatus(500))
+    .expect(testutils.checkStatus(200))
     .expect(testutils.checkHeaders)
     .end(done);
   });
@@ -1427,8 +1405,14 @@ suite('delete orders', function() {
     .send({
       secret: addresses.SECRET
     })
-    .expect(testutils.checkBody(errors.RESTResponseLedgerSequenceTooHigh))
-    .expect(testutils.checkStatus(500))
+    .expect(testutils.checkBody(fixtures.RESTCancelTransactionResponse({
+        last_ledger: 8819952,
+        sequence: 2938,
+        offer_sequence: void(0),
+        fee: '0.000012',
+        hash: 'AD922400CB1CE0876CA7203DBE0B1277D0D0EAC56A64F26CEC6C78D447EFEA5E'
+      })))
+    .expect(testutils.checkStatus(200))
     .expect(testutils.checkHeaders)
     .end(done);
   });

@@ -842,6 +842,49 @@ suite('post settings', function() {
       .end(done);
   });
 
+  test('/accounts/:account/settings?validated=true -- validated and transfer rate 1.002', function(done) {
+    var currentLedger = self.app.remote._ledger_current_index;
+    var lastLedger = currentLedger + testutils.LEDGER_OFFSET;
+
+    self.wss.once('request_account_info', function(message, conn) {
+      assert.strictEqual(message.command, 'account_info');
+      assert.strictEqual(message.account, addresses.VALID);
+      conn.send(fixtures.accountInfoResponse(message));
+    });
+
+    self.wss.once('request_submit', function(message, conn) {
+      assert.strictEqual(message.command, 'submit');
+      assert(message.hasOwnProperty('tx_blob'));
+
+      conn.send(fixtures.submitSettingsResponse(message, lastLedger));
+
+      setImmediate(function() {
+        conn.send(fixtures.settingsValidatedResponse());
+      });
+    });
+
+    self.app
+      .post(fixtures.requestPath(addresses.VALID, '?validated=true'))
+      .send({
+        secret: addresses.SECRET,
+        settings: {
+          require_destination_tag: true,
+          require_authorization: true,
+          disallow_xrp: true,
+          domain: 'example.com',
+          email_hash: '23463B99B62A72F26ED677CC556C44E8',
+          wallet_locator: 'DEADBEEF',
+          wallet_size: 1,
+          transfer_rate: 1.002,
+          no_freeze: false,
+          global_freeze: true
+        }})
+      .expect(testutils.checkBody(fixtures.RESTAccountSettingsSubmitResponse(currentLedger, 'validated')))
+      .expect(testutils.checkStatus(200))
+      .expect(testutils.checkHeaders)
+      .end(done);
+  });
+
   test('/accounts/:account/settings?validated=true -- submission failed', function(done) {
     var lastLedger = self.app.remote._ledger_current_index;
 

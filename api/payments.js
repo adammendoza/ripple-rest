@@ -80,6 +80,7 @@ function submitPayment(request, response, next) {
   };
 
   transactions.submit(options, new SubmitTransactionHooks(hooks), function(err, payment) {
+    console.log('error recieved', err);
     if (err) {
       return next(err);
     }
@@ -213,25 +214,28 @@ function submitPayment(request, response, next) {
     });
   };
 
-  function formatTransactionResponse(message, meta, callback) {
-    if (meta.state === 'validated') {
-      var transaction = message.tx_json;
-      transaction.meta = message.metadata;
-      transaction.ledger_index = transaction.inLedger = message.ledger_index;
+  function formatTransactionResponse(message, meta, callback, waitForValidated) {
 
-      return formatPaymentHelper(params.payment.source_account, transaction, function (error, payment) {
-        if (error) {
-          return callback(error);
-        }
+    console.log('waitForValidated', waitForValidated === true, waitForValidated);
 
-        callback(null, { payment: payment });
+    if (waitForValidated !== true) {
+      var urlBase = utils.getUrlBase(request);
+      return callback(null, {
+        client_resource_id: params.client_resource_id,
+        status_url: urlBase + '/v1/accounts/' + params.payment.source_account + '/payments/' + params.client_resource_id
       });
     }
 
-    var urlBase = utils.getUrlBase(request);
-    callback(null, {
-      client_resource_id: params.client_resource_id,
-      status_url: urlBase + '/v1/accounts/' + params.payment.source_account + '/payments/' + params.client_resource_id
+    var transaction = message.tx_json;
+    transaction.meta = message.metadata;
+    transaction.ledger_index = transaction.inLedger = message.ledger_index;
+
+    return formatPaymentHelper(params.payment.source_account, transaction, function (error, payment) {
+      if (error) {
+        return callback(error);
+      }
+
+      return callback(null, { payment: payment });
     });
   };
 
